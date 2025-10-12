@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { ShieldCheck, FileCheck } from "lucide-react"
 
 type Step = 1 | 2 | 3 | 4
 type FormData = {
@@ -67,6 +69,27 @@ export function BeneficiaryForm() {
     setLoading(true)
     await new Promise((r) => setTimeout(r, 800))
     setEkycVerified(true)
+    // auto-fill mock details
+    setData((prev) => ({
+      ...prev,
+      name: prev.name || "Ravi Kumar",
+      dob: prev.dob || "1994-06-12",
+      address: prev.address || "123, Ward 5, Example Nagar, Jaipur, Rajasthan",
+    }))
+    setLoading(false)
+  }
+
+  async function importFromDigiLocker() {
+    setLoading(true)
+    await new Promise((r) => setTimeout(r, 700))
+    setEkycVerified(true)
+    setData((prev) => ({
+      ...prev,
+      name: "Ravi Kumar",
+      dob: "1994-06-12",
+      address: "123, Ward 5, Example Nagar, Jaipur, Rajasthan",
+      email: prev.email || "ravi@example.com",
+    }))
     setLoading(false)
   }
 
@@ -92,23 +115,35 @@ export function BeneficiaryForm() {
       {step === 1 && (
         <section className="mt-4 grid gap-3">
           <Label htmlFor="aadhaar">Aadhaar Number</Label>
-          <Input
-            id="aadhaar"
-            inputMode="numeric"
-            maxLength={12}
-            placeholder="12-digit Aadhaar"
-            value={data.aadhaar}
-            onChange={(e) => setData({ ...data, aadhaar: e.target.value.replace(/\D/g, "").slice(0, 12) })}
-          />
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
+            <Input
+              id="aadhaar"
+              inputMode="numeric"
+              maxLength={12}
+              placeholder="12-digit Aadhaar"
+              value={data.aadhaar}
+              onChange={(e) => setData({ ...data, aadhaar: e.target.value.replace(/\D/g, "").slice(0, 12) })}
+            />
+            {ekycVerified && (
+              <Badge variant="secondary" className="text-green-700 border-green-600/30 bg-green-50">
+                <ShieldCheck className="mr-1 h-3.5 w-3.5" /> Verified
+              </Badge>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-2">
             <Button onClick={simulateEKYC} disabled={loading || data.aadhaar.length !== 12}>
-              {loading ? "Verifying..." : ekycVerified ? "eKYC Verified" : "Start eKYC"}
+              {loading ? "Verifying..." : "Verify Aadhaar"}
             </Button>
-            <Button variant="secondary" onClick={() => setStep(2)} disabled={!ekycVerified}>
+            <Button variant="secondary" onClick={importFromDigiLocker} disabled={loading}>
+              <FileCheck className="mr-2 h-4 w-4" /> Import from DigiLocker
+            </Button>
+            <Button variant="ghost" onClick={() => setStep(2)} disabled={!ekycVerified}>
               Next
             </Button>
           </div>
-          <p className="text-xs text-muted-foreground">Simulated Aadhaar eKYC for prototype; no real data accessed.</p>
+          <p className="text-xs text-muted-foreground">
+            Mock verification for demo; auto-fills basic details after verify.
+          </p>
         </section>
       )}
 

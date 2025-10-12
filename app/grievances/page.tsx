@@ -1,15 +1,16 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 
 export default function GrievancesPage() {
   const [ticketId, setTicketId] = useState<string | null>(null)
+  const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
 
   async function submit(e: React.FormEvent) {
@@ -20,6 +21,7 @@ export default function GrievancesPage() {
     const res = await fetch("/api/grievances", { method: "POST", body: formData })
     const data = await res.json()
     setTicketId(data.ticketId)
+    setOpen(true)
     setLoading(false)
     form.reset()
   }
@@ -48,9 +50,30 @@ export default function GrievancesPage() {
               </Button>
             </form>
             {ticketId && (
-              <p className="mt-4 text-sm text-muted-foreground">
-                Ticket generated: <span className="font-medium">{ticketId}</span>
-              </p>
+              <>
+                <p className="mt-4 text-sm text-muted-foreground">
+                  Ticket generated: <span className="font-medium">{ticketId}</span>
+                </p>
+                <Dialog open={open} onOpenChange={setOpen}>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Grievance Submitted</DialogTitle>
+                      <DialogDescription>Save your ticket details for future reference.</DialogDescription>
+                    </DialogHeader>
+                    <div className="text-sm grid gap-2">
+                      <div>
+                        Ticket ID: <span className="font-medium">{ticketId}</span>
+                      </div>
+                      <div>
+                        Status: <span className="font-medium text-yellow-700">Pending</span>
+                      </div>
+                      <p className="text-muted-foreground">
+                        Our team will review and respond. You can track this via your Application ID or this ticket.
+                      </p>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </>
             )}
           </CardContent>
         </Card>

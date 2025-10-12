@@ -4,7 +4,21 @@ import { useState } from "react"
 import useSWR from "swr"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts"
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  PieChart,
+  Pie,
+  Cell,
+  LineChart,
+  Line,
+  Legend,
+} from "recharts"
 import { Input } from "@/components/ui/input"
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json())
@@ -12,6 +26,19 @@ const fetcher = (url: string) => fetch(url).then((r) => r.json())
 export default function DashboardPage() {
   const [role, setRole] = useState<"district" | "state" | "central" | null>(null)
   const { data } = useSWR(role ? "/api/analytics?role=" + role : null, fetcher)
+
+  const utilization = [
+    { name: "Utilized", value: 78 },
+    { name: "Balance", value: 22 },
+  ]
+  const avgTime = [
+    { month: "Jan", days: 18 },
+    { month: "Feb", days: 16 },
+    { month: "Mar", days: 14 },
+    { month: "Apr", days: 13 },
+    { month: "May", days: 12 },
+  ]
+  const COLORS = ["var(--color-chart-2)", "var(--color-chart-3)"]
 
   return (
     <div className="px-4 md:px-8">
@@ -68,6 +95,42 @@ export default function DashboardPage() {
                 <div>
                   Avg. Processing Time: <span className="font-medium text-foreground">{data?.avgDays ?? "-"} days</span>
                 </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Fund Utilization</CardTitle>
+              </CardHeader>
+              <CardContent className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={utilization} dataKey="value" nameKey="name" innerRadius={50} outerRadius={80} label>
+                      {utilization.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            <Card className="md:col-span-2">
+              <CardHeader>
+                <CardTitle>Average Disbursement Time (days)</CardTitle>
+              </CardHeader>
+              <CardContent className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={avgTime}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <Tooltip />
+                    <Line type="monotone" dataKey="days" stroke="var(--color-chart-5)" />
+                  </LineChart>
+                </ResponsiveContainer>
               </CardContent>
             </Card>
 

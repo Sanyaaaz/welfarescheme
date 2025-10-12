@@ -8,6 +8,7 @@ import { SiteHeader } from "@/components/site-header"
 import { I18nProvider } from "@/components/providers/i18n-provider"
 import { AccessibilityProvider } from "@/components/providers/accessibility-provider"
 import { Suspense } from "react"
+import { ChatbotWidget } from "@/components/chatbot-widget"
 
 export const metadata: Metadata = {
   title: "v0 App",
@@ -28,6 +29,7 @@ export default function RootLayout({
             <AccessibilityProvider>
               <SiteHeader />
               <main className="min-h-dvh">{children}</main>
+              <ChatbotWidget />
             </AccessibilityProvider>
           </I18nProvider>
         </Suspense>

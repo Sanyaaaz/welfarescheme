@@ -5,6 +5,7 @@ import { useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { FundJourney, type Stage } from "./fund-journey"
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json())
 
@@ -37,7 +38,10 @@ export function TrackForm() {
                 <li key={i}>{t}</li>
               ))}
             </ul>
-            <div className="mt-4">
+            <div className="mt-6">
+              <FundJourney current={(data.stage as Stage) || "Verified"} />
+            </div>
+            <div className="mt-6">
               <Button onClick={() => window.print()}>Download Payment Certificate (PDF)</Button>
             </div>
           </CardContent>

@@ -2,6 +2,7 @@ import { AnnouncementBar } from "@/components/announcement-bar"
 import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { AwarenessHub } from "@/components/awareness-hub"
 
 export default function HomePage() {
   return (
@@ -89,6 +90,8 @@ export default function HomePage() {
             </CardContent>
           </Card>
         </section>
+
+        <AwarenessHub />
       </section>
     </div>
   )

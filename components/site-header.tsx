@@ -5,6 +5,8 @@ import Link from "next/link"
 import { LanguageToggle } from "./language-toggle"
 import { LargeTextToggle } from "./large-text-toggle"
 import { Button } from "@/components/ui/button"
+import { VoiceAssistButton } from "./voice-assist-button"
+import { HighContrastToggle } from "./high-contrast-toggle"
 
 export function SiteHeader() {
   return (
@@ -45,6 +47,8 @@ export function SiteHeader() {
         <div className="flex items-center gap-2">
           <LanguageToggle />
           <LargeTextToggle />
+          <HighContrastToggle />
+          <VoiceAssistButton />
           <Button asChild size="sm" variant="outline" className="hidden md:inline-flex bg-transparent">
             <Link href="/apply">Apply Now</Link>
           </Button>
