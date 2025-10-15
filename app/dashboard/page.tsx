@@ -1,9 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import useSWR from "swr"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { AuditLog } from "@/components/audit/audit-log"
 import {
   ResponsiveContainer,
   BarChart,
@@ -19,13 +21,53 @@ import {
   Line,
   Legend,
 } from "recharts"
-import { Input } from "@/components/ui/input"
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json())
 
+function exportCSV(rows: any[], name = "report.csv") {
+  const keys = rows.length ? Object.keys(rows[0]) : []
+  const csv = [keys.join(","), ...rows.map((r) => keys.map((k) => JSON.stringify(r[k] ?? "")).join(","))].join("\n")
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = name
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+function IntegrationPanel() {
+  const [status, setStatus] = useState<Record<string, boolean>>({
+    Aadhaar: true,
+    DigiLocker: true,
+    eCourts: false,
+    CCTNS: false,
+    PFMS: true,
+  })
+  return (
+    <div className="grid gap-3 md:grid-cols-5">
+      {Object.entries(status).map(([k, v]) => (
+        <div key={k} className="rounded border p-3 text-sm flex items-center justify-between">
+          <span>{k}</span>
+          <button
+            className={`px-2 py-1 rounded ${v ? "bg-green-600 text-white" : "bg-destructive text-destructive-foreground"}`}
+            onClick={() => setStatus((s) => ({ ...s, [k]: !s[k] }))}
+            aria-pressed={v}
+          >
+            {v ? "Connected" : "Disconnected"}
+          </button>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export default function DashboardPage() {
   const [role, setRole] = useState<"district" | "state" | "central" | null>(null)
+  const [district, setDistrict] = useState<string>("All")
+  const [date, setDate] = useState<string>("")
   const { data } = useSWR(role ? "/api/analytics?role=" + role : null, fetcher)
+  const tableRows = useMemo(() => data?.table || [], [data])
 
   const utilization = [
     { name: "Utilized", value: 78 },
@@ -161,8 +203,41 @@ export default function DashboardPage() {
                 </p>
               </CardContent>
             </Card>
+
+            {role && (
+              <div className="mt-4 grid gap-3 md:grid-cols-3">
+                <Input
+                  placeholder="Filter by district"
+                  value={district}
+                  onChange={(e) => setDistrict(e.target.value)}
+                />
+                <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+                <Button variant="outline" onClick={() => exportCSV(tableRows, `applications_${district || "all"}.csv`)}>
+                  Download CSV
+                </Button>
+              </div>
+            )}
           </div>
         )}
+
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle>Integration Status</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <IntegrationPanel />
+            <p className="mt-2 text-xs text-muted-foreground">Mock connection toggles for prototype only.</p>
+          </CardContent>
+        </Card>
+
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle>Recent Activity (Audit Log)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <AuditLog limit={8} />
+          </CardContent>
+        </Card>
       </section>
     </div>
   )

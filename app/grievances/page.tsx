@@ -1,17 +1,33 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { addAudit } from "@/components/audit/audit-log"
 
 export default function GrievancesPage() {
   const [ticketId, setTicketId] = useState<string | null>(null)
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [status, setStatus] = useState<"Pending" | "In Review" | "Resolved" | "Escalated" | null>(null)
+
+  useEffect(() => {
+    if (ticketId) {
+      // Simulate SLA escalation after 3 days
+      const escalationTimer = setTimeout(
+        () => {
+          setStatus("Escalated")
+        },
+        3 * 24 * 60 * 60 * 1000,
+      ) // 3 days in milliseconds
+
+      return () => clearTimeout(escalationTimer)
+    }
+  }, [ticketId])
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -24,6 +40,8 @@ export default function GrievancesPage() {
     setOpen(true)
     setLoading(false)
     form.reset()
+    setStatus("Pending")
+    addAudit({ action: "Grievance Raised", actor: "Beneficiary", ref: data.ticketId })
   }
 
   return (
@@ -65,7 +83,7 @@ export default function GrievancesPage() {
                         Ticket ID: <span className="font-medium">{ticketId}</span>
                       </div>
                       <div>
-                        Status: <span className="font-medium text-yellow-700">Pending</span>
+                        Status: <span className="font-medium text-yellow-700">{status || "Pending"}</span>
                       </div>
                       <p className="text-muted-foreground">
                         Our team will review and respond. You can track this via your Application ID or this ticket.
@@ -73,6 +91,33 @@ export default function GrievancesPage() {
                     </div>
                   </DialogContent>
                 </Dialog>
+                <div className="mt-4 grid gap-2 text-sm">
+                  <div>
+                    Current Status: <span className="font-medium">{status || "Pending"}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button size="sm" variant="secondary" onClick={() => setStatus("In Review")}>
+                      Mark In Review
+                    </Button>
+                    <Button size="sm" onClick={() => setStatus("Resolved")}>
+                      Mark Resolved
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setStatus("Escalated")}
+                      title="Simulate 3-day SLA breach"
+                    >
+                      Simulate 3 days → Escalate
+                    </Button>
+                  </div>
+                  {status === "Resolved" && (
+                    <div className="mt-2">
+                      <label className="text-sm">Feedback (optional)</label>
+                      <Textarea placeholder="Share your feedback on the resolution" />
+                    </div>
+                  )}
+                </div>
               </>
             )}
           </CardContent>

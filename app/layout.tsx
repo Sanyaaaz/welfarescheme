@@ -9,6 +9,7 @@ import { I18nProvider } from "@/components/providers/i18n-provider"
 import { AccessibilityProvider } from "@/components/providers/accessibility-provider"
 import { Suspense } from "react"
 import { ChatbotWidget } from "@/components/chatbot-widget"
+import { AuthProvider } from "@/components/providers/auth-provider"
 
 export const metadata: Metadata = {
   title: "v0 App",
@@ -25,13 +26,15 @@ export default function RootLayout({
     <html lang="en">
       <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable}`}>
         <Suspense fallback={<div>Loading...</div>}>
-          <I18nProvider>
-            <AccessibilityProvider>
-              <SiteHeader />
-              <main className="min-h-dvh">{children}</main>
-              <ChatbotWidget />
-            </AccessibilityProvider>
-          </I18nProvider>
+          <AuthProvider>
+            <I18nProvider>
+              <AccessibilityProvider>
+                <SiteHeader />
+                <main className="min-h-dvh">{children}</main>
+                <ChatbotWidget />
+              </AccessibilityProvider>
+            </I18nProvider>
+          </AuthProvider>
         </Suspense>
         <Analytics />
       </body>

@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -8,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { ShieldCheck, FileCheck } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 
 type Step = 1 | 2 | 3 | 4
 type FormData = {
@@ -21,6 +23,9 @@ type FormData = {
   fir?: File | null
   casteCert?: File | null
   notes?: string
+  consent?: boolean
+  firPreview?: string
+  castePreview?: string
 }
 
 const LOCAL_KEY = "applyDraft"
@@ -41,7 +46,12 @@ export function BeneficiaryForm() {
     fir: null,
     casteCert: null,
     notes: "",
+    consent: false,
+    firPreview: "",
+    castePreview: "",
   })
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [verifyOpen, setVerifyOpen] = useState(false)
 
   // Offline save
   useEffect(() => {
@@ -62,6 +72,7 @@ export function BeneficiaryForm() {
     if (step === 1) return data.aadhaar.length === 12 && ekycVerified
     if (step === 2) return !!data.name && !!data.dob && !!data.address && !!data.phone
     if (step === 3) return !!data.fir && !!data.casteCert
+    if (step === 4) return !!data.consent
     return true
   }, [step, data, ekycVerified])
 
@@ -69,7 +80,6 @@ export function BeneficiaryForm() {
     setLoading(true)
     await new Promise((r) => setTimeout(r, 800))
     setEkycVerified(true)
-    // auto-fill mock details
     setData((prev) => ({
       ...prev,
       name: prev.name || "Ravi Kumar",
@@ -77,6 +87,7 @@ export function BeneficiaryForm() {
       address: prev.address || "123, Ward 5, Example Nagar, Jaipur, Rajasthan",
     }))
     setLoading(false)
+    setVerifyOpen(true)
   }
 
   async function importFromDigiLocker() {
@@ -91,6 +102,7 @@ export function BeneficiaryForm() {
       email: prev.email || "ravi@example.com",
     }))
     setLoading(false)
+    setVerifyOpen(true)
   }
 
   async function submit() {
@@ -105,6 +117,52 @@ export function BeneficiaryForm() {
     const json = await res.json()
     setApplicationId(json.applicationId)
     setLoading(false)
+    localStorage.removeItem(LOCAL_KEY)
+  }
+
+  function validateFile(file: File) {
+    const okType = /^(application\/pdf|image\/jpeg|image\/png)$/i.test(file.type)
+    const okSize = file.size <= 5 * 1024 * 1024
+    return { ok: okType && okSize, okType, okSize }
+  }
+
+  async function handleFile(kind: "fir" | "caste", f: File | null) {
+    if (!f) {
+      setData((d) => ({ ...d, [kind]: null, [`${kind}Preview`]: "" as any }))
+      return
+    }
+    const { ok, okType, okSize } = validateFile(f)
+    if (!ok) {
+      alert(
+        `Invalid file. Allowed: PDF/JPEG/PNG; Max size: 5MB.\nType ok: ${okType ? "yes" : "no"} | Size ok: ${
+          okSize ? "yes" : "no"
+        }`,
+      )
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = () => {
+      setData((d) => ({ ...d, [kind]: f, [`${kind}Preview`]: reader.result as string }))
+    }
+    reader.readAsDataURL(f)
+  }
+
+  function simulateOCR() {
+    // very simple mock extraction from filename
+    const nameFromFile =
+      data.fir?.name.replace(/\.[^.]+$/, "").replace(/[_-]/g, " ") ||
+      data.casteCert?.name.replace(/\.[^.]+$/, "").replace(/[_-]/g, " ")
+    if (nameFromFile) {
+      setData((d) => ({
+        ...d,
+        name: d.name || nameFromFile.split(" ")[0] + " Kumar",
+        address: d.address || "Auto-extracted: Ward 10, Sample Colony",
+      }))
+    }
+  }
+
+  function syncNow() {
+    alert("Sync simulated. Your draft has been uploaded in this demo.")
     localStorage.removeItem(LOCAL_KEY)
   }
 
@@ -188,19 +246,41 @@ export function BeneficiaryForm() {
             </button>
           </div>
           <Label>Upload FIR copy (PDF/JPG)</Label>
-          <Input
-            type="file"
-            accept=".pdf,image/*"
-            onChange={(e) => setData({ ...data, fir: e.target.files?.[0] || null })}
-          />
+          <Input type="file" accept=".pdf,image/*" onChange={(e) => handleFile("fir", e.target.files?.[0] || null)} />
+          {data.firPreview && (
+            <div className="flex items-center gap-2">
+              <Image
+                src={data.firPreview || "/placeholder.svg"}
+                alt="FIR preview"
+                width={80}
+                height={80}
+                className="rounded border"
+              />
+              <span className="text-xs text-muted-foreground">{data.fir?.name}</span>
+            </div>
+          )}
           <Label>Upload Caste Certificate (PDF/JPG)</Label>
-          <Input
-            type="file"
-            accept=".pdf,image/*"
-            onChange={(e) => setData({ ...data, casteCert: e.target.files?.[0] || null })}
-          />
-          <Label>Notes (optional)</Label>
-          <Textarea value={data.notes} onChange={(e) => setData({ ...data, notes: e.target.value })} />
+          <Input type="file" accept=".pdf,image/*" onChange={(e) => handleFile("caste", e.target.files?.[0] || null)} />
+          {data.castePreview && (
+            <div className="flex items-center gap-2">
+              <Image
+                src={data.castePreview || "/placeholder.svg"}
+                alt="Caste certificate preview"
+                width={80}
+                height={80}
+                className="rounded border"
+              />
+              <span className="text-xs text-muted-foreground">{data.casteCert?.name}</span>
+            </div>
+          )}
+          <div className="flex flex-wrap items-center gap-2">
+            <Button size="sm" variant="secondary" onClick={simulateOCR}>
+              Simulate OCR Extract
+            </Button>
+            <Button size="sm" variant="outline" onClick={syncNow}>
+              Sync Now
+            </Button>
+          </div>
           <div className="flex items-center gap-2 mt-2">
             <Button variant="outline" onClick={() => setStep(2)}>
               Back
@@ -243,9 +323,70 @@ export function BeneficiaryForm() {
               )}
             </CardContent>
           </Card>
-          <p className="mt-2 text-xs text-muted-foreground">eSign simulated for prototype.</p>
+          <div className="mt-3 flex items-center gap-2">
+            <input
+              id="consent"
+              type="checkbox"
+              checked={!!data.consent}
+              onChange={(e) => setData({ ...data, consent: e.target.checked })}
+            />
+            <label htmlFor="consent" className="text-sm">
+              I agree to data verification via Aadhaar/DigiLocker and accept the{" "}
+              <button type="button" className="underline" onClick={() => setDialogOpen(true)}>
+                Privacy Policy
+              </button>
+              .
+            </label>
+          </div>
+          <div className="mt-2">
+            <Button variant="outline" size="sm" onClick={() => window.print()}>
+              Download Receipt (PDF)
+            </Button>
+          </div>
         </section>
       )}
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Privacy Policy</DialogTitle>
+            <DialogDescription>
+              This demo simulates consented verification. No real personal data is processed. Uploaded files stay
+              in-browser only.
+            </DialogDescription>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={verifyOpen} onOpenChange={setVerifyOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Identity Verified</DialogTitle>
+            <DialogDescription>Details have been auto-filled from Aadhaar/DigiLocker for this demo.</DialogDescription>
+          </DialogHeader>
+          <div className="text-sm grid gap-2">
+            <div>
+              <span className="text-muted-foreground">Name:</span> {data.name || "—"}
+            </div>
+            <div>
+              <span className="text-muted-foreground">DOB:</span> {data.dob || "—"}
+            </div>
+            <div className="break-words">
+              <span className="text-muted-foreground">Address:</span> {data.address || "—"}
+            </div>
+            <div>
+              <Badge variant="secondary" className="text-green-700 border-green-600/30 bg-green-50">
+                <ShieldCheck className="mr-1 h-3.5 w-3.5" /> Verified
+              </Badge>
+            </div>
+            <div className="mt-2">
+              <Button size="sm" onClick={() => setVerifyOpen(false)}>
+                Continue
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

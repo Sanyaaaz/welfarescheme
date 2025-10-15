@@ -7,8 +7,12 @@ import { LargeTextToggle } from "./large-text-toggle"
 import { Button } from "@/components/ui/button"
 import { VoiceAssistButton } from "./voice-assist-button"
 import { HighContrastToggle } from "./high-contrast-toggle"
+import { NotificationBell } from "@/components/notifications/notification-bell"
+import { RoleSwitcher } from "./role-switcher"
+import { useAuth } from "./providers/auth-provider"
 
 export function SiteHeader() {
+  const { role } = useAuth()
   return (
     <header className="border-b bg-card">
       <div className="mx-auto max-w-7xl px-4 md:px-8 py-3 flex items-center justify-between gap-4">
@@ -43,8 +47,15 @@ export function SiteHeader() {
           <Link href="/contact" className="hover:underline">
             Contact
           </Link>
+          {role === "officer" || role === "admin" ? (
+            <Link href="/ledger" className="hover:underline">
+              Ledger
+            </Link>
+          ) : null}
         </nav>
         <div className="flex items-center gap-2">
+          <RoleSwitcher />
+          <NotificationBell role={role} />
           <LanguageToggle />
           <LargeTextToggle />
           <HighContrastToggle />
